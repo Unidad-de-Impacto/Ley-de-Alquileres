@@ -1,0 +1,151 @@
+---
+title: "ley_alquileres"
+author: "Marco Curcio"
+date: "2024-08-19"
+output: html_document
+---
+Cargo librerias
+```{r setup, include=FALSE}
+library(readxl)
+library(lubridate)
+library(ggplot2)
+```
+Cargo dataset de precios alquileres y datos de inflación mes a mes. Ambos desde el 2018
+```{r}
+alquileres <- read_excel("C:/Users/curciom/Desktop/proyectos/ley_alquileres/datasets/alquileresagrupacion_202407.xlsx")
+
+inflacion <- read_excel("C:/Users/curciom/Desktop/proyectos/ley_alquileres/datasets/inflacion_ipc.xlsx")
+```
+Filtro porque solo voy a trabajar con datos de CABA
+```{r}
+alquileres_amba <- alquileres %>%
+  filter(Aglomerado == "AMBA" &
+         Inmueble == "Departamento")
+```
+Creo una nueva columna para ver la variación intermensual
+```{r}
+alquileres_amba <- alquileres_amba %>%
+    mutate(monthly_pct_changes = round((Mediana.por.m2.a.precios.corrientes / lag(Mediana.por.m2.a.precios.corrientes) - 1) * 100, 2))
+
+#unifico ambos datasets
+alquiler_clean <- alquileres_amba %>%
+  left_join(inflacion, by = "Mes")
+```
+
+Creo un primer grafico para visualizar el impacto de la derogación de la normativa
+```{r}
+#indico el año de corte que divide las tendencias en dos. Previo y posterior a la derogación de la ley de alquileres.
+cutoff <- "2023-12"
+#armo el grafico
+alquileres_año <- ggplot(alquileres_amba, aes(Mes, Oferta,
+                    fill=factor(ifelse(Mes =="2023-12","Highlighted","Normal")))) + #le asigno una categoria a diciembre del 2023 para diferenciarlo del resto de los años y poder colorearlo posteriormente
+  geom_bar(stat = "identity") +
+  geom_smooth(aes(group = Mes >= cutoff), #armo la linea de tendencia, utilizando una regresión lineal simple 
+              method = "lm",
+              color = "#E6B861",
+              alpha = 0.1) +
+  geom_vline(xintercept = "2023-12",
+             linetype = "dotted",
+             color =  "#E6B861")+
+  annotate("text", 
+  x = "2023-12", #agrego un texto y sombreado indicando cuando se derogo la ley de alquileres
+  y = 3, 
+  label = "Derogación ley 
+  de alquileres",
+  family = "montserrat",
+  size = 5,
+  color = "black") +
+  scale_x_discrete(breaks = c("2018-01", "2019-01","2020-01","2021-01","2022-01","2023-01","2024-01"), 
+                   labels= c("2018","2019","2020","2021","2022","2023","2024")) + 
+  scale_fill_manual(name = "año", values=c("#242C4F","#46658B")) + #agrego los colores
+  theme(legend.position = "none", #hago una serie de modificaciones en el tema para que pueda ser exportado como un .PNG transparente
+        panel.background = element_rect(fill='transparent'), 
+        plot.background = element_rect(fill='transparent', color=NA), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.background = element_rect(fill='transparent'),
+        legend.box.background = element_rect(fill='transparent'),
+        text = element_text(size = 14,family = "montserrat")) + 
+  labs(title = "Oferta de alquileres de departamentos en AMBA", #agrego el titulo
+      caption = "Datos hasta julio del 2024
+      Fuente: Elaboración propia en base a índices elaborados por Mercado Libre y Universidad de San Andrés") +
+  ylab("Oferta") +
+  xlab("Mes")
+#guardo el grafico
+ggsave('alquileres_año.png',
+       alquileres_año,
+       bg='transparent',
+        width = 16, 
+       height = 10)
+```
+
+```{r}
+cutoff <- "2023-12"
+#armo el grafico
+precios_inflacion <- ggplot(alquiler_clean) + 
+  geom_bar(aes(Mes,monthly_pct_changes,
+                    fill=factor(ifelse(Mes =="2023-12","Inflación","Variación precios"))),stat = "identity")+
+  geom_point(aes(x = Mes, y = variacion), color = "#242C4F") +
+  scale_x_discrete(breaks = c("2018-01", "2019-01","2020-01","2021-01","2022-01","2023-01","2024-01"), 
+                   labels= c("2018","2019","2020","2021","2022","2023","2024")) + 
+  scale_fill_manual(name = "año", values=c("#242C4F","#46658B")) + #agrego los colores
+  theme(legend.position = "bottom", #hago una serie de modificaciones en el tema para que pueda ser exportado como un .PNG transparente
+        panel.background = element_rect(fill='transparent'), 
+        plot.background = element_rect(fill='transparent', color=NA), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.background = element_rect(fill='transparent'),
+        legend.box.background = element_rect(fill='transparent'),
+        text = element_text(size = 14,family = "montserrat")) + 
+  labs(title = "Variación de precios en alquileres de departamentos en AMBA",
+       subtitle = "Comparación con inflación mensual", #agrego el titulo
+      caption = "Datos hasta julio del 2024
+      Fuente: Elaboración propia en base a índices elaborados por Mercado Libre y Universidad de San Andrés") +
+  ylab("Variación porcentual") +
+  xlab("Mes")
+#guardo el grafico
+ggsave('precios_inflacion.png',
+       precios_inflacion,
+       bg='transparent',
+        width = 16, 
+       height = 10)
+```
+
+```{r}
+cutoff <- "2023-12"
+#armo el grafico
+evolucion_mensual <- ggplot(alquiler_clean) + 
+  geom_bar(aes(Mes, Mediana.por.m2.a.precios.constantes,
+                    fill=factor(ifelse(Mes =="2023-12","Highlighted","Normal"))),stat = "identity")+
+  annotate("text", 
+  x = "2024-02", #agrego un texto y sombreado indicando cuando se derogo la ley de alquileres
+  y = 300, 
+  label = "Derogación ley 
+  de alquileres",
+  family = "montserrat",
+  size = 5,
+  color = "black") +
+  scale_x_discrete(breaks = c("2018-01", "2019-01","2020-01","2021-01","2022-01","2023-01","2024-01"), 
+                   labels= c("2018","2019","2020","2021","2022","2023","2024")) + 
+  scale_fill_manual(name = "año", values=c("#242C4F","#46658B")) + #agrego los colores
+  theme(legend.position = "none", #hago una serie de modificaciones en el tema para que pueda ser exportado como un .PNG transparente
+        panel.background = element_rect(fill='transparent'), 
+        plot.background = element_rect(fill='transparent', color=NA), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.background = element_rect(fill='transparent'),
+        legend.box.background = element_rect(fill='transparent'),
+        text = element_text(size = 14,family = "montserrat")) + 
+  labs(title = "Precios en alquileres de departamentos en AMBA", #agrego el titulo
+      caption = "Datos hasta julio del 2024
+      Fuente: Elaboración propia en base a indices elaborados por Mercado Libre y Universidad de San Andrés") +
+  ylab("Pesos constantes") +
+  xlab("Mes")
+#guardo el grafico
+ggsave('evolucion_mensual.png',
+       evolucion_mensual,
+       bg='transparent',
+        width = 16, 
+       height = 10)
+```
+
