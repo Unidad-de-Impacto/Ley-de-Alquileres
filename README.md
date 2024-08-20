@@ -1,2 +1,2 @@
 # Ley-de-Alquileres
-Analisis de la oferta en los alquileres de departamentos en AMBA
+Analisis de la oferta y precio por metro cuadrado de departamento en alquiler en AMBA
