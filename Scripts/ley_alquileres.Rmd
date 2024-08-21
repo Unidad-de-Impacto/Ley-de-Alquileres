@@ -9,12 +9,13 @@ Cargo librerias
 library(readxl)
 library(lubridate)
 library(ggplot2)
+library(ggtext)
 ```
 Cargo dataset de precios alquileres y datos de inflación mes a mes. Ambos desde el 2018
 ```{r}
-alquileres <- read_excel("C:/Users/curciom/Desktop/proyectos/ley_alquileres/datasets/alquileresagrupacion_202407.xlsx")
+alquileres <- read_excel("C:/Users/curciom/Desktop/proyectos/unidad_evaluacion/ley_alquileres/datasets/alquileresagrupacion_202407.xlsx")
 
-inflacion <- read_excel("C:/Users/curciom/Desktop/proyectos/ley_alquileres/datasets/inflacion_ipc.xlsx")
+inflacion <- read_excel("C:/Users/curciom/Desktop/proyectos/unidad_evaluacion/ley_alquileres/datasets/inflacion_ipc.xlsx")
 ```
 Filtro porque solo voy a trabajar con datos de CABA
 ```{r}
@@ -34,8 +35,13 @@ alquiler_clean <- alquileres_amba %>%
 
 Creo un primer grafico para visualizar el impacto de la derogación de la normativa
 ```{r}
+
+callout <- paste0(
+  "Oferta de departamentos +<b>90.3%</b><br> <b style='color:", "black",
+  ";'>2024-01 </b>vs. <b style='color:", "black", ";'>2023-12</b>"
+)
 #indico el año de corte que divide las tendencias en dos. Previo y posterior a la derogación de la ley de alquileres.
-cutoff <- "2023-12"
+cutoff <- "2023-12-28"
 #armo el grafico
 alquileres_año <- ggplot(alquileres_amba, aes(Mes, Oferta,
                     fill=factor(ifelse(Mes =="2023-12","Highlighted","Normal")))) + #le asigno una categoria a diciembre del 2023 para diferenciarlo del resto de los años y poder colorearlo posteriormente
@@ -44,20 +50,41 @@ alquileres_año <- ggplot(alquileres_amba, aes(Mes, Oferta,
               method = "lm",
               color = "#E6B861",
               alpha = 0.1) +
-  geom_vline(xintercept = "2023-12",
-             linetype = "dotted",
-             color =  "#E6B861")+
+  geom_segment(aes(x = 72.5, xend = 72.5, y = 0, yend = 4), # Coloca la línea vertical manualmente
+               linetype = "dashed",
+               color = "#E6B861",
+               linewidth = 1) +# Coloca la línea vertical manualmente
   annotate("text", 
-  x = "2023-12", #agrego un texto y sombreado indicando cuando se derogo la ley de alquileres
+  x = "2023-09", #agrego un texto y sombreado indicando cuando se derogo la ley de alquileres
   y = 3, 
   label = "Derogación ley 
   de alquileres",
   family = "montserrat",
   size = 5,
   color = "black") +
+    annotate("rect",xmin ="2023-05",
+           xmax = "2024-01", 
+           ymin = 2.85, 
+           ymax = 3.12,
+  alpha = .1) +
+  geom_richtext(
+      aes(x = "2023-03", y = 2.2, label = callout), stat = "unique",
+      family = "sans", size = 4, lineheight = 1.2,
+      color = "black", hjust = 0.5, vjust = 1.03, fill = NA, label.color = NA
+    ) +
+      annotate("rect",xmin ="2022-09",
+           xmax = "2023-09", 
+           ymin = 1.97, 
+           ymax = 2.22,
+  alpha = .1) +
+   annotate(
+      geom = "curve", x = "2023-04", xend = "2023-12", y = 1.9, yend = 1.5, curvature = .35, 
+      angle = 60, color = "#E6B861", linewidth = .4, 
+      arrow = arrow(type = "closed", length = unit(.08, "inches"))
+    ) +
   scale_x_discrete(breaks = c("2018-01", "2019-01","2020-01","2021-01","2022-01","2023-01","2024-01"), 
                    labels= c("2018","2019","2020","2021","2022","2023","2024")) + 
-  scale_fill_manual(name = "año", values=c("#242C4F","#46658B")) + #agrego los colores
+  scale_fill_manual(name = "año", values=c("#46658B","#46658B")) + #agrego los colores
   theme(legend.position = "none", #hago una serie de modificaciones en el tema para que pueda ser exportado como un .PNG transparente
         panel.background = element_rect(fill='transparent'), 
         plot.background = element_rect(fill='transparent', color=NA), 
@@ -113,21 +140,49 @@ ggsave('precios_inflacion.png',
 
 ```{r}
 cutoff <- "2023-12"
+callout_1 <- paste0(
+  "Precios de departamentos -<b>6.7%</b><br> <b style='color:", "black",
+  ";'>2024-01 </b>vs. <b style='color:", "black", ";'>2023-12</b>"
+)
 #armo el grafico
 evolucion_mensual <- ggplot(alquiler_clean) + 
   geom_bar(aes(Mes, Mediana.por.m2.a.precios.constantes,
                     fill=factor(ifelse(Mes =="2023-12","Highlighted","Normal"))),stat = "identity")+
+    geom_segment(aes(x = 72.5, xend = 72.5, y = 0, yend = 500), # Coloca la línea vertical manualmente
+               linetype = "dashed",
+               linewidth = 1,
+               color = "#E6B861") +
   annotate("text", 
-  x = "2024-02", #agrego un texto y sombreado indicando cuando se derogo la ley de alquileres
+  x = "2024-04", #agrego un texto y sombreado indicando cuando se derogo la ley de alquileres
   y = 300, 
   label = "Derogación ley 
   de alquileres",
   family = "montserrat",
-  size = 5,
+  size = 4,
   color = "black") +
+    geom_richtext(
+      aes(x = "2023-02", y = 330, label = callout_1), stat = "unique",
+      family = "sans", size = 4, lineheight = 1.2,
+      color = "black", hjust = 0.5, vjust = 1.03, fill = NA, label.color = NA
+    ) +
+      annotate("rect",xmin ="2022-08",
+           xmax = "2023-09", 
+           ymin = 305, 
+           ymax = 327,
+  alpha = .1) +
+   annotate(
+      geom = "curve", x = "2023-02", xend = "2023-12", y = 300, yend = 200, curvature = .35, 
+      angle = 60, color = "#E6B861", linewidth = .4, 
+      arrow = arrow(type = "closed", length = unit(.08, "inches"))
+    ) +
+  annotate("rect",xmin ="2024-01",
+           xmax = "2024-07", 
+           ymin = 280, 
+           ymax = 315,
+  alpha = .1) +
   scale_x_discrete(breaks = c("2018-01", "2019-01","2020-01","2021-01","2022-01","2023-01","2024-01"), 
                    labels= c("2018","2019","2020","2021","2022","2023","2024")) + 
-  scale_fill_manual(name = "año", values=c("#242C4F","#46658B")) + #agrego los colores
+  scale_fill_manual(name = "año", values=c("#46658B","#46658B")) + #agrego los colores
   theme(legend.position = "none", #hago una serie de modificaciones en el tema para que pueda ser exportado como un .PNG transparente
         panel.background = element_rect(fill='transparent'), 
         plot.background = element_rect(fill='transparent', color=NA), 
@@ -136,7 +191,7 @@ evolucion_mensual <- ggplot(alquiler_clean) +
         legend.background = element_rect(fill='transparent'),
         legend.box.background = element_rect(fill='transparent'),
         text = element_text(size = 14,family = "montserrat")) + 
-  labs(title = "Precios en alquileres de departamentos en AMBA", #agrego el titulo
+  labs(title = "Precios por m2 de departamentos en alquiler en AMBA", #agrego el titulo
       caption = "Datos hasta julio del 2024
       Fuente: Elaboración propia en base a indices elaborados por Mercado Libre y Universidad de San Andrés") +
   ylab("Pesos constantes") +
@@ -149,3 +204,13 @@ ggsave('evolucion_mensual.png',
        height = 10)
 ```
 
+```{r}
+base <- read_excel("/Users/ariquelme/Downloads/alquileresagrupacion_202407.xlsx")
+
+base <- base[base$Aglomerado=="AMBA",]
+base <- base[base$Inmueble=="Departamento",]
+dic2023 <- base[base$Mes=="2023-12",]$Mediana.por.m2.a.precios.constantes
+ene2024 <- base[base$Mes=="2024-01",]$Mediana.por.m2.a.precios.constantes
+
+variacion_int <- ((ene2024-dic2023)/dic2023)*100
+```
