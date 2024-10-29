@@ -3,7 +3,7 @@ library(lubridate)
 library(ggplot2)
 library(ggtext)
 
-alquileres <- read_excel("/Users/ariquelme/Downloads/alquileresagrupacion_202407.xlsx")
+alquileres <- read_excel("direccion/alquileresagrupacion_202407.xlsx")
 
 alquileres_amba <- alquileres %>%
   filter(Aglomerado == "AMBA" &
@@ -150,7 +150,7 @@ ggsave('alquileres_año_1.png',
 
 ### calculo de variaciones 
 
-base <- read_excel("/Users/ariquelme/Downloads/alquileresagrupacion_202407.xlsx")
+base <- read_excel("direccion/alquileresagrupacion_202407.xlsx")
 
 base <- base[base$Aglomerado=="AMBA",]
 base <- base[base$Inmueble=="Departamento",]
